@@ -41,6 +41,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
+import static org.apache.commons.lang3.JavaVersion.JAVA_9;
+import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtLeast;
 import static org.apache.maven.plugin.surefire.SurefireHelper.escapeToPlatformPath;
 
 /**
@@ -161,9 +163,15 @@ public class ForkConfiguration
 
         if ( argLine != null )
         {
-            cli.createArg().setLine(
-                   replaceThreadNumberPlaceholder( stripNewLines( replacePropertyExpressions( argLine ) ),
-                                                   threadNumber ) );
+            String jvmArgLine = replaceThreadNumberPlaceholder( stripNewLines( replacePropertyExpressions( argLine ) ),
+                                                                      threadNumber );
+
+            if ( isJavaVersionAtLeast( JAVA_9 ) && !jvmArgLine.contains( "--add-modules" ) )
+            {
+                jvmArgLine += " --add-modules ALL-SYSTEM";
+            }
+
+            cli.createArg().setLine( jvmArgLine );
         }
 
         for ( Map.Entry<String, String> entry : environmentVariables.entrySet() )
